@@ -41,3 +41,7 @@ struct ImagePickerView: View {
         .navigationTitle("Select Image")
     }
 }
+
+#Preview {
+    ImagePickerView()
+}

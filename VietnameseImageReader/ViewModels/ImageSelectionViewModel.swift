@@ -6,8 +6,7 @@
 import SwiftUI
 
 @MainActor
-class ImageToSpeechViewModel: ObservableObject {
+class ImageSelectionViewModel: ObservableObject {
     @Published var selectedImage: UIImage?
-    @Published var recognizedText: String = ""
     @Published var showCamera = false
 }

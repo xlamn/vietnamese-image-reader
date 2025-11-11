@@ -8,37 +8,20 @@
 import SwiftUI
 
 struct SpeechView: View {
-    @StateObject private var viewModel = SpeechViewModel()
+    @ObservedObject var viewModel: SpeechViewModel
+    var recognizedText: String
 
     var body: some View {
-        VStack(spacing: 20) {
-            TextEditor(text: $viewModel.textToSpeak)
-                .frame(height: 150)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
-                .padding()
-
-            HStack {
-                Button(action: { viewModel.speakText() }) {
-                    Label("Speak", systemImage: "speaker.wave.2.fill")
-                        .font(.headline)
-                }
-                .buttonStyle(.borderedProminent)
-
-                Button(action: { viewModel.stopSpeaking() }) {
-                    Label("Stop", systemImage: "stop.circle.fill")
-                        .font(.headline)
-                }
-                .buttonStyle(.bordered)
+        if !recognizedText.isEmpty {
+            Button {
+                viewModel.speak(recognizedText)
+            } label: {
+                Label("Read Aloud", systemImage: "speaker.wave.2.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
             }
-
-            Spacer()
+            .buttonStyle(.borderedProminent)
+            .padding(.horizontal)
         }
-        .padding()
-        .navigationTitle("Text-to-Speech")
     }
 }
-
-#Preview {
-    SpeechView()
-}
-

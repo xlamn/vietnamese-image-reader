@@ -10,22 +10,24 @@ import SwiftUI
 @MainActor
 class TextRecognitionViewModel: ObservableObject {
     @Published var recognizedText: String = ""
-    @Published var isProcessing: Bool = false
-    @Published var errorMessage: String? = nil
+    @Published var isProcessing = false
 
     private let textRecognitionService = TextRecognitionService()
 
-    func recognizeText(from image: UIImage) {
+    func recognizeText(from image: UIImage) async {
         isProcessing = true
-        Task {
-            do {
-                let text = try await textRecognitionService.recognizeText(from: image)
-                self.recognizedText = text
-            } catch {
-                self.errorMessage = error.localizedDescription
-                print("❌ OCR failed: \(error.localizedDescription)")
-            }
-            self.isProcessing = false
+        defer { isProcessing = false }
+
+        do {
+            let text = try await textRecognitionService.recognizeText(from: image)
+            recognizedText = text
+        } catch {
+            recognizedText = "Failed to recognize text."
+            print("OCR error: \(error.localizedDescription)")
         }
+    }
+
+    func reset() {
+        recognizedText = ""
     }
 }

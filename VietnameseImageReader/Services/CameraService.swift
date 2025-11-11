@@ -5,45 +5,82 @@
 //  Created by Lam Nguyen on 06.11.25.
 //
 
-import SwiftUI
+import AVFoundation
 import UIKit
 
-struct CameraService: UIViewControllerRepresentable {
-    @Environment(\.dismiss) private var dismiss
-    var onImagePicked: (UIImage) -> Void
+final class CameraService: NSObject {
+    private let session = AVCaptureSession()
+    private let output = AVCapturePhotoOutput()
+    private var completionHandler: ((UIImage?) -> Void)?
+    private let sessionQueue = DispatchQueue(label: "CameraSessionQueue")
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parent: self)
+    // Public preview layer
+    let previewLayer = AVCaptureVideoPreviewLayer()
+
+    override init() {
+        super.init()
+        previewLayer.videoGravity = .resizeAspectFill
+        configureSession()
     }
 
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = context.coordinator
-        picker.allowsEditing = false
-        return picker
-    }
+    private func configureSession() {
+        session.beginConfiguration()
+        session.sessionPreset = .photo
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) { }
-
-    // MARK: - Coordinator
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraService
-
-        init(parent: CameraService) {
-            self.parent = parent
+        guard let device = AVCaptureDevice.default(for: .video),
+              let input = try? AVCaptureDeviceInput(device: device),
+              session.canAddInput(input),
+              session.canAddOutput(output)
+        else {
+            print("⚠️ Failed to configure camera session.")
+            return
         }
 
-        func imagePickerController(_ picker: UIImagePickerController,
-                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.onImagePicked(image)
+        session.addInput(input)
+        session.addOutput(output)
+        session.commitConfiguration()
+
+        previewLayer.session = session
+    }
+
+    func startSession() {
+        sessionQueue.async {
+            if !self.session.isRunning {
+                self.session.startRunning()
             }
-            parent.dismiss()
+        }
+    }
+
+    func stopSession() {
+        sessionQueue.async {
+            if self.session.isRunning {
+                self.session.stopRunning()
+            }
+        }
+    }
+
+    func capturePhoto(completion: @escaping (UIImage?) -> Void) {
+        completionHandler = completion
+        let settings = AVCapturePhotoSettings()
+        output.capturePhoto(with: settings, delegate: self)
+    }
+}
+
+extension CameraService: AVCapturePhotoCaptureDelegate {
+    func photoOutput(_ output: AVCapturePhotoOutput,
+                     didFinishProcessingPhoto photo: AVCapturePhoto,
+                     error: Error?) {
+        if let error = error {
+            print("❌ Capture error: \(error.localizedDescription)")
+            completionHandler?(nil)
+            return
         }
 
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
+        if let data = photo.fileDataRepresentation(),
+           let image = UIImage(data: data) {
+            completionHandler?(image)
+        } else {
+            completionHandler?(nil)
         }
     }
 }

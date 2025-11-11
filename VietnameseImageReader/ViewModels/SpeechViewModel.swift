@@ -9,19 +9,13 @@ import SwiftUI
 
 @MainActor
 class SpeechViewModel: ObservableObject {
-    @Published var textToSpeak: String = ""
-    @Published var isSpeaking: Bool = false
-
     private let speechService = SpeechService()
 
-    func speakText() {
-        guard !textToSpeak.isEmpty else { return }
-        isSpeaking = true
-        speechService.speak(textToSpeak)
+    func speak(_ text: String) {
+        speechService.speak(text)
     }
 
-    func stopSpeaking() {
+    func stop() {
         speechService.stop()
-        isSpeaking = false
     }
 }

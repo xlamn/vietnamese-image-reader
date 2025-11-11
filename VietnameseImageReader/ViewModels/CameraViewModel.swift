@@ -6,13 +6,33 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 @MainActor
 class CameraViewModel: ObservableObject {
-    @Published var capturedImage: UIImage? = nil
-    @Published var isShowingCamera = false
+    private let service = CameraService()
+    @Published var previewLayer: AVCaptureVideoPreviewLayer
+    @Published var capturedImage: UIImage?
 
-    func handleImage(_ image: UIImage) {
-        capturedImage = image
+    init() {
+        self.previewLayer = service.previewLayer
+    }
+
+    func startSession() {
+        service.startSession()
+    }
+
+    func stopSession() {
+        service.stopSession()
+    }
+
+    func capturePhoto(completion: @escaping (UIImage) -> Void) {
+        service.capturePhoto { [weak self] image in
+            guard let image = image else { return }
+            DispatchQueue.main.async {
+                self?.capturedImage = image
+                completion(image)
+            }
+        }
     }
 }

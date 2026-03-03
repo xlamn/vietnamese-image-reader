@@ -22,7 +22,7 @@ struct ImageToSpeechView: View {
                 // MARK: - Input Buttons
                 HStack(spacing: 16) {
                     Button {
-                        coordinator.imageVM.showCamera = true
+                        coordinator.showCamera = true
                     } label: {
                         Label("Take Photo", systemImage: "camera")
                     }
@@ -60,10 +60,10 @@ struct ImageToSpeechView: View {
             }
             .padding()
             .navigationTitle("Image → Speech")
-            .fullScreenCover(isPresented: $coordinator.imageVM.showCamera) {
+            .fullScreenCover(isPresented: $coordinator.showCamera) {
                 CameraView { image in
                     Task { await coordinator.handleImage(image) }
-                    coordinator.imageVM.showCamera = false
+                    coordinator.showCamera = false
                 }
                 .ignoresSafeArea()
             }

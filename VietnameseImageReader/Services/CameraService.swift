@@ -13,17 +13,22 @@ final class CameraService: NSObject {
     private let output = AVCapturePhotoOutput()
     private var completionHandler: ((UIImage?) -> Void)?
     private let sessionQueue = DispatchQueue(label: "CameraSessionQueue")
+    private var isConfigured = false
+    var onPermissionDenied: (() -> Void)?
 
     // Public preview layer
-    let previewLayer = AVCaptureVideoPreviewLayer()
+    let previewLayer: AVCaptureVideoPreviewLayer
 
     override init() {
+        previewLayer = AVCaptureVideoPreviewLayer(session: session)
         super.init()
         previewLayer.videoGravity = .resizeAspectFill
-        configureSession()
     }
 
     private func configureSession() {
+        // Must be called on sessionQueue
+        guard !isConfigured else { return }
+
         session.beginConfiguration()
         session.sessionPreset = .photo
 
@@ -32,6 +37,7 @@ final class CameraService: NSObject {
               session.canAddInput(input),
               session.canAddOutput(output)
         else {
+            session.commitConfiguration()
             print("⚠️ Failed to configure camera session.")
             return
         }
@@ -39,15 +45,42 @@ final class CameraService: NSObject {
         session.addInput(input)
         session.addOutput(output)
         session.commitConfiguration()
-
-        previewLayer.session = session
+        isConfigured = true
     }
 
     func startSession() {
-        sessionQueue.async {
-            if !self.session.isRunning {
-                self.session.startRunning()
+        // Check permission on main thread first
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            sessionQueue.async {
+                self.configureSession()
+                if !self.session.isRunning {
+                    self.session.startRunning()
+                }
             }
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                guard let self = self else { return }
+                if granted {
+                    self.sessionQueue.async {
+                        self.configureSession()
+                        if !self.session.isRunning {
+                            self.session.startRunning()
+                        }
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        self.onPermissionDenied?()
+                    }
+                }
+            }
+        case .denied, .restricted:
+            print("⚠️ Camera access denied or restricted.")
+            DispatchQueue.main.async {
+                self.onPermissionDenied?()
+            }
+        @unknown default:
+            break
         }
     }
 
@@ -60,9 +93,11 @@ final class CameraService: NSObject {
     }
 
     func capturePhoto(completion: @escaping (UIImage?) -> Void) {
-        completionHandler = completion
-        let settings = AVCapturePhotoSettings()
-        output.capturePhoto(with: settings, delegate: self)
+        sessionQueue.async {
+            self.completionHandler = completion
+            let settings = AVCapturePhotoSettings()
+            self.output.capturePhoto(with: settings, delegate: self)
+        }
     }
 }
 

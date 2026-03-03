@@ -13,6 +13,7 @@ class ImageToSpeechCoordinator: ObservableObject {
     @Published var imageVM = ImageSelectionViewModel()
     @Published var textVM = TextRecognitionViewModel()
     @Published var speechVM = SpeechViewModel()
+    @Published var showCamera = false
     
     func handleImage(_ image: UIImage) async {
         imageVM.selectedImage = image

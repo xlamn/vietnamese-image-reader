@@ -54,7 +54,7 @@ struct ImageToSpeechView: View {
 
                 // MARK: - Speech Output
                 SpeechView(viewModel: coordinator.speechVM,
-                           recognizedText: coordinator.textVM.recognizedText)
+                           text: coordinator.recognizedText)
 
                 Spacer()
             }
@@ -62,7 +62,10 @@ struct ImageToSpeechView: View {
             .navigationTitle("Image → Speech")
             .fullScreenCover(isPresented: $coordinator.showCamera) {
                 CameraView { image in
-                    Task { await coordinator.handleImage(image) }
+                    Task {
+                        await coordinator.handleImage(image)
+                        await coordinator.recognizeText(from: image)
+                    }
                     coordinator.showCamera = false
                 }
                 .ignoresSafeArea()

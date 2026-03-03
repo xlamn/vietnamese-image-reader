@@ -61,7 +61,7 @@ struct ImageToSpeechView: View {
             .padding()
             .navigationTitle("Image → Speech")
             .fullScreenCover(isPresented: $coordinator.showCamera) {
-                CameraView { image in
+                CameraView(viewModel: coordinator.cameraVM) { image in
                     Task {
                         await coordinator.handleImage(image)
                         await coordinator.recognizeText(from: image)

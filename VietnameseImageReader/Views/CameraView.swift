@@ -36,7 +36,7 @@ struct CameraPreviewView: UIViewRepresentable {
 }
 
 struct CameraView: View {
-    @StateObject private var viewModel = CameraViewModel()
+    @ObservedObject var viewModel: CameraViewModel
     var onImageCaptured: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
 

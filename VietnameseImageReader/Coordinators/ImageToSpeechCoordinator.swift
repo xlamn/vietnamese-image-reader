@@ -13,6 +13,7 @@ class ImageToSpeechCoordinator: ObservableObject {
     @Published var imageVM = ImageSelectionViewModel()
     @Published var textVM = TextRecognitionViewModel()
     @Published var speechVM = SpeechViewModel()
+    @Published var cameraVM = CameraViewModel()
     @Published var showCamera = false
     @Published var recognizedText: String = ""
 

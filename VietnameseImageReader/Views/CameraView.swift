@@ -36,8 +36,7 @@ struct CameraPreviewView: UIViewRepresentable {
 }
 
 struct CameraView: View {
-    @ObservedObject var viewModel: CameraViewModel
-    var onImageCaptured: (UIImage) -> Void
+    @ObservedObject var viewModel: ImageToSpeechViewModel
     @Environment(\.dismiss) private var dismiss
 
     private var topSafeArea: CGFloat {
@@ -47,10 +46,10 @@ struct CameraView: View {
     }
 
     var body: some View {
-        CameraPreviewView(previewLayer: viewModel.previewLayer)
+        CameraPreviewView(previewLayer: viewModel.cameraPreviewLayer)
             .ignoresSafeArea()
-            .onAppear { viewModel.startSession() }
-            .onDisappear { viewModel.stopSession() }
+            .onAppear { viewModel.startCamera() }
+            .onDisappear { viewModel.stopCamera() }
             .overlay {
                 VStack {
                     HStack {
@@ -73,7 +72,10 @@ struct CameraView: View {
 
                     Button {
                         viewModel.capturePhoto { image in
-                            onImageCaptured(image)
+                            Task {
+                                viewModel.handleImage(image)
+                                await viewModel.recognizeText(from: image)
+                            }
                             dismiss()
                         }
                     } label: {
@@ -85,16 +87,16 @@ struct CameraView: View {
                     .padding(.bottom, 40)
                 }
             }
-        .alert("Camera Access Required", isPresented: $viewModel.showPermissionDeniedAlert) {
-            Button("Open Settings") {
-                viewModel.openSettings()
-                dismiss()
+            .alert("Camera Access Required", isPresented: $viewModel.showCameraPermissionAlert) {
+                Button("Open Settings") {
+                    viewModel.openSettings()
+                    dismiss()
+                }
+                Button("Cancel", role: .cancel) {
+                    dismiss()
+                }
+            } message: {
+                Text("Please enable camera access in Settings to take photos.")
             }
-            Button("Cancel", role: .cancel) {
-                dismiss()
-            }
-        } message: {
-            Text("Please enable camera access in Settings to take photos.")
-        }
     }
 }

@@ -9,7 +9,7 @@ import SwiftUI
 import PhotosUI
 
 struct ImageToSpeechView: View {
-    @StateObject private var coordinator = ImageToSpeechCoordinator()
+    @StateObject private var viewModel = ImageToSpeechViewModel()
     @State private var selectedItem: PhotosPickerItem? = nil
 
     var body: some View {
@@ -17,12 +17,12 @@ struct ImageToSpeechView: View {
             VStack(spacing: 20) {
 
                 // MARK: - Image Preview
-                ImagePreview(image: $coordinator.imageVM.selectedImage)
+                ImagePreview(image: viewModel.selectedImage)
 
                 // MARK: - Input Buttons
                 HStack(spacing: 16) {
                     Button {
-                        coordinator.showCamera = true
+                        viewModel.showCamera = true
                     } label: {
                         Label("Take Photo", systemImage: "camera")
                     }
@@ -36,13 +36,11 @@ struct ImageToSpeechView: View {
                     .onChange(of: selectedItem) { newItem in
                         Task {
                             guard let newItem else { return }
-                            do {
-                                if let data = try await newItem.loadTransferable(type: Data.self),
-                                   let uiImage = UIImage(data: data) {
-                                    selectedItem = nil
-                                    await coordinator.handleImage(uiImage)
-                                    await coordinator.recognizeText(from: uiImage)
-                                }
+                            if let data = try? await newItem.loadTransferable(type: Data.self),
+                               let uiImage = UIImage(data: data) {
+                                selectedItem = nil
+                                viewModel.handleImage(uiImage)
+                                await viewModel.recognizeText(from: uiImage)
                             }
                         }
                     }
@@ -50,32 +48,35 @@ struct ImageToSpeechView: View {
                 }
 
                 // MARK: - Text Recognition Output
-                TextRecognitionView(viewModel: coordinator.textVM)
+                RecognizedTextDisplay(
+                    text: viewModel.recognizedText,
+                    isProcessing: viewModel.isProcessing
+                )
 
                 // MARK: - Speech Output
-                SpeechView(viewModel: coordinator.speechVM,
-                           text: coordinator.recognizedText)
+                if !viewModel.recognizedText.isEmpty {
+                    ReadAloudButton(isSpeaking: viewModel.isSpeaking) {
+                        if viewModel.isSpeaking {
+                            viewModel.stopSpeaking()
+                        } else {
+                            viewModel.speak()
+                        }
+                    }
+                }
 
                 Spacer()
             }
             .padding()
-            .navigationTitle("Image → Speech")
-            .fullScreenCover(isPresented: $coordinator.showCamera) {
-                CameraView(viewModel: coordinator.cameraVM) { image in
-                    Task {
-                        await coordinator.handleImage(image)
-                        await coordinator.recognizeText(from: image)
-                    }
-                    coordinator.showCamera = false
-                }
-                .ignoresSafeArea()
+            .navigationTitle("Image to Speech")
+            .fullScreenCover(isPresented: $viewModel.showCamera) {
+                CameraView(viewModel: viewModel)
             }
         }
     }
 }
 
 struct ImagePreview: View {
-    @Binding var image: UIImage?
+    var image: UIImage?
 
     var body: some View {
         if let image {
@@ -94,8 +95,6 @@ struct ImagePreview: View {
         }
     }
 }
-
-
 
 #Preview {
     ImageToSpeechView()

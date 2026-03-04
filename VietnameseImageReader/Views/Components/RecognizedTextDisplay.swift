@@ -1,22 +1,21 @@
 //
-//  TextRecognitionView.swift
+//  RecognizedTextDisplay.swift
 //  VietnameseImageReader
-//
-//  Created by Lam Nguyen on 07.11.25.
 //
 
 import SwiftUI
 
-struct TextRecognitionView: View {
-    @ObservedObject var viewModel: TextRecognitionViewModel
+struct RecognizedTextDisplay: View {
+    var text: String
+    var isProcessing: Bool
 
     var body: some View {
         Group {
-            if viewModel.isProcessing {
+            if isProcessing {
                 ProgressView("Recognizing text...")
-            } else if !viewModel.recognizedText.isEmpty {
+            } else if !text.isEmpty {
                 ScrollView {
-                    Text(viewModel.recognizedText)
+                    Text(text)
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.gray.opacity(0.05))

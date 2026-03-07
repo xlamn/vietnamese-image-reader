@@ -89,6 +89,10 @@ class ImageToSpeechViewModel: ObservableObject {
         }
     }
 
+    func setZoom(_ factor: CGFloat) {
+        cameraService.setZoom(factor)
+    }
+
     func openSettings() {
         guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(settingsURL)

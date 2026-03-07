@@ -14,10 +14,24 @@ final class CameraService: NSObject {
     private var completionHandler: ((UIImage?) -> Void)?
     private let sessionQueue = DispatchQueue(label: "CameraSessionQueue")
     private var isConfigured = false
+    private var currentDevice: AVCaptureDevice?
     var onPermissionDenied: (() -> Void)?
 
     // Public preview layer
     let previewLayer: AVCaptureVideoPreviewLayer
+
+    // Zoom properties
+    var minZoomFactor: CGFloat {
+        currentDevice?.minAvailableVideoZoomFactor ?? 1.0
+    }
+
+    var maxZoomFactor: CGFloat {
+        min(currentDevice?.maxAvailableVideoZoomFactor ?? 5.0, 10.0)
+    }
+
+    var currentZoomFactor: CGFloat {
+        currentDevice?.videoZoomFactor ?? 1.0
+    }
 
     override init() {
         previewLayer = AVCaptureVideoPreviewLayer(session: session)
@@ -45,7 +59,23 @@ final class CameraService: NSObject {
         session.addInput(input)
         session.addOutput(output)
         session.commitConfiguration()
+        currentDevice = device
         isConfigured = true
+    }
+
+    func setZoom(_ factor: CGFloat) {
+        sessionQueue.async {
+            guard let device = self.currentDevice else { return }
+            let clampedFactor = max(self.minZoomFactor, min(factor, self.maxZoomFactor))
+
+            do {
+                try device.lockForConfiguration()
+                device.videoZoomFactor = clampedFactor
+                device.unlockForConfiguration()
+            } catch {
+                print("⚠️ Failed to set zoom: \(error.localizedDescription)")
+            }
+        }
     }
 
     func startSession() {

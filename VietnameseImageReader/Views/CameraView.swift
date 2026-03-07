@@ -38,6 +38,7 @@ struct CameraPreviewView: UIViewRepresentable {
 struct CameraView: View {
     @ObservedObject var viewModel: ImageToSpeechViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var lastZoomFactor: CGFloat = 1.0
 
     private var topSafeArea: CGFloat {
         UIApplication.shared.connectedScenes
@@ -48,6 +49,16 @@ struct CameraView: View {
     var body: some View {
         CameraPreviewView(previewLayer: viewModel.cameraPreviewLayer)
             .ignoresSafeArea()
+            .gesture(
+                MagnificationGesture()
+                    .onChanged { value in
+                        let newZoom = lastZoomFactor * value
+                        viewModel.setZoom(newZoom)
+                    }
+                    .onEnded { value in
+                        lastZoomFactor = viewModel.cameraService.currentZoomFactor
+                    }
+            )
             .onAppear { viewModel.startCamera() }
             .onDisappear { viewModel.stopCamera() }
             .overlay {

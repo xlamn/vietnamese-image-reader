@@ -68,6 +68,7 @@ struct ImageToSpeechView: View {
             }
             .padding()
             .navigationTitle("Image to Speech")
+            .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $viewModel.showCamera) {
                 CameraView(viewModel: viewModel)
             }

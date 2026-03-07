@@ -17,6 +17,7 @@ class ImageToSpeechViewModel: ObservableObject {
     // MARK: - Published State
     @Published var selectedImage: UIImage?
     @Published var recognizedText: String = ""
+    @Published var selectedText: String = ""
     @Published var isProcessing = false
     @Published var isSpeaking = false
     @Published var showCamera = false
@@ -43,6 +44,7 @@ class ImageToSpeechViewModel: ObservableObject {
     func handleImage(_ image: UIImage) {
         selectedImage = image
         recognizedText = ""
+        selectedText = ""
     }
 
     // MARK: - Text Recognition
@@ -61,7 +63,8 @@ class ImageToSpeechViewModel: ObservableObject {
 
     // MARK: - Speech
     func speak() {
-        speechService.speak(recognizedText)
+        let textToSpeak = selectedText.isEmpty ? recognizedText : selectedText
+        speechService.speak(textToSpeak)
     }
 
     func stopSpeaking() {

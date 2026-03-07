@@ -50,7 +50,8 @@ struct ImageToSpeechView: View {
                 // MARK: - Text Recognition Output
                 RecognizedTextDisplay(
                     text: viewModel.recognizedText,
-                    isProcessing: viewModel.isProcessing
+                    isProcessing: viewModel.isProcessing,
+                    selectedText: $viewModel.selectedText
                 )
 
                 // MARK: - Speech Output
